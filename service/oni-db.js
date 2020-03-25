@@ -7,8 +7,11 @@ const BASE_URL = 'https://oni-db.com/';
 (async () => {
   try {
     const browser = await puppeteer.launch({
-      // headless: false,
+      headless: false,
       // devtools: true,
+      args: [
+        '--proxy-server=http://127.0.0.1:1080'
+      ],
       defaultViewport: {
         width: 1920,
         height: 1080
@@ -23,9 +26,9 @@ const BASE_URL = 'https://oni-db.com/';
       await handler.click()
       const title = await handler.$eval('.jss196', node => node.textContent)
       console.log(title)
-      const items = await page.$$eval('.EntrySection .EntryCard .EntryActionArea', ele => {
+      const items = await page.$$eval('.EntrySection .EntryCard .EntryActionArea', els => {
         function getKey (link) {
-          return link.split('/').slice(-1, 0)[0]
+          return link.split('/').slice(-1)[0]
         }
         return els.map(el => {
           const key = getKey(el.href)
@@ -43,7 +46,7 @@ const BASE_URL = 'https://oni-db.com/';
     fs.writeFileSync(fileMenuPath, JSON.stringify({ menus }, null, 2))
 
     let items = {}
-    const keys = menus.map(menu => menu.items.map(({ key }) => key)).flat(1)
+    const keys = menus.reduce((pre, menu) => pre.concat(menu.items.map(({ key }) => key)), [])
     const getInfo = async selector => {
       return await page.$$eval(selector, els => {
         return els.map(el => {
@@ -66,7 +69,7 @@ const BASE_URL = 'https://oni-db.com/';
         function getContentItem (ele) {
           if (ele.nodeName === 'DIV') {
             const link = c.querySelector('.EntryActionArea').href
-            const value = link.split('/').slice(-1, 0)[0]
+            const value = link.split('/').slice(-1)[0]
             return { type: 'item', value }
           }
           return { type: 'separator' }
@@ -106,7 +109,7 @@ const BASE_URL = 'https://oni-db.com/';
             subClasses
           }
         })
-      }, getContentItem)
+      })
       items[key] = {
         shortInfo,
         tags,
