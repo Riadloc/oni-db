@@ -5,18 +5,15 @@ const path = require('path')
 const BASE_URL = 'https://oni-db.com/';
 
 (async () => {
+  const browser = await puppeteer.launch({
+    // headless: false,
+    // devtools: true,
+    defaultViewport: {
+      width: 1920,
+      height: 1080
+    }
+  })
   try {
-    const browser = await puppeteer.launch({
-      headless: false,
-      // devtools: true,
-      args: [
-        '--proxy-server=http://127.0.0.1:1080'
-      ],
-      defaultViewport: {
-        width: 1920,
-        height: 1080
-      }
-    })
     const page = await browser.newPage()
     await page.goto(BASE_URL)
     await page.waitForSelector('.jss197')
@@ -57,26 +54,27 @@ const BASE_URL = 'https://oni-db.com/';
         })
       })
     }
-    for (const key of keys) {
+    for (const key of [keys[0]]) {
       const link = `${BASE_URL}details/${key}`
       await page.goto(link)
-      await page.waitForSelector('.jss31')
-      const shortInfo = await page.$$eval('.jss31', els => els.map(el => el.textContent))
-      const tags = await page.$$eval('.jss1032', els => els.map(el => el.textContent))
-      const baseInfo = getInfo('.jss1147 .jss1122')
-      const additionalInfo = getInfo('.jss1120 .jss1122')
-      const mainClasses = await page.$$eval('.jss977', els => {
+      await page.waitForSelector('.jss389')
+      const wrapper = '#root main+div hr+div>div'
+      const shortInfo = await page.$$eval(`${wrapper} p`, els => els.map(el => el.textContent))
+      const tags = await page.$$eval(`${wrapper} p`, els => els.map(el => el.textContent))
+      const baseInfo = await getInfo('.jss396>.jss428 table tr.jss430')
+      const additionalInfo = await getInfo('.jss396>.jss455 table tr.jss430')
+      const mainClasses = await page.$$eval('.jss367', els => {
         function getContentItem (ele) {
           if (ele.nodeName === 'DIV') {
-            const link = c.querySelector('.EntryActionArea').href
+            const link = ele.querySelector('.EntryActionArea').href
             const value = link.split('/').slice(-1)[0]
             return { type: 'item', value }
           }
           return { type: 'separator' }
         }
-        els.map(el => {
-          const mainTitle = el.querySelector('.jss978').textContent
-          let subEls = el.querySelectorAll('.jss979')
+        return els.map(el => {
+          const mainTitle = el.querySelector('.jss470').textContent
+          let subEls = el.querySelectorAll('.jss471')
           let subClasses = []
           let content = []
           if (subEls && subEls.length) {
@@ -93,15 +91,13 @@ const BASE_URL = 'https://oni-db.com/';
                   content: []
                 }
               }
-              if (t >= 0 && index > subIndex[t] && index < subIndex[t + 1]) {
-                if (ele.className === 'jss1073') {
-                  const content = Array.from(ele.children).map(getContentItem)
-                  subClasses[t].content.push(content)
-                }
+              if (t >= 0 && ele.className === 'jss482' && index > subIndex[t] && index < subIndex[t + 1]) {
+                const content = Array.from(ele.children).map(getContentItem)
+                subClasses[t].content.push(content)
               }
             }
           } else {
-            content = Array.from(el.querySelector('.jss1161')).map(getContentItem)
+            content = Array.from(el.querySelectorAll('.jss472,.jss482')).map(getContentItem)
           }
           return {
             mainTitle,
@@ -124,5 +120,5 @@ const BASE_URL = 'https://oni-db.com/';
   } catch (error) {
     console.log(error)
   }
-  await browser.close()
+  // await browser.close()
 })()
